@@ -214,10 +214,7 @@ func init() {
 
 func main() {
 	e := echo.New()
-	e.Debug = true
-	e.Logger.SetLevel(log.DEBUG)
 
-	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	e.POST("/initialize", postInitialize)
@@ -248,6 +245,11 @@ func main() {
 	e.Group("/debug/pprof").Any("/symbol", echo.WrapHandler(http.HandlerFunc(pprof.Symbol)))
 	e.Group("/debug/pprof").Any("/trace", echo.WrapHandler(http.HandlerFunc(pprof.Trace)))
 	e.Group("/debug/pprof").Any("/*", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
+
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		fmt.Println(err)
+		e.DefaultHTTPErrorHandler(err, c)
+	}
 
 	mySQLConnectionData = NewMySQLConnectionEnv()
 
