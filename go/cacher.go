@@ -32,5 +32,11 @@ func (ch *Cacher) SetLastCondition(jiaIsuUUID string, c IsuCondition) {
 	ch.ConditionMtx.Lock()
 	defer ch.ConditionMtx.Unlock()
 
+	if _c, ok := ch.GetLastCondition(jiaIsuUUID); ok {
+		if _c.Timestamp.After(c.Timestamp) {
+			return
+		}
+	}
+
 	ch.LastConditions[jiaIsuUUID] = c
 }
