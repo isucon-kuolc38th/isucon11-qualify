@@ -1243,9 +1243,9 @@ func postIsuCondition(c echo.Context) error {
 
 		res, err := tx.Exec(
 			"INSERT INTO `isu_condition`"+
-				"	(`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `created_at`)"+
-				"	VALUES (?, ?, ?, ?, ?, ?)",
-			jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message, createdAt)
+				"	(`id`, `jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `created_at`)"+
+				"	VALUES (?, ?, ?, ?, ?, ?, ?)",
+			createdAt.UnixNano(), jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message, createdAt)
 		if err != nil {
 			c.Logger().Errorf("db error: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
