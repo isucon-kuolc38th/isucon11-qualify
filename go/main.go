@@ -1128,7 +1128,7 @@ func calculateConditionLevel(condition string) (string, error) {
 func getTrend(c echo.Context) error {
 	defer measure.Start("getTrend").Stop()
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(800 * time.Millisecond)
 
 	res := []TrendResponse{}
 	for character, isuList := range cacher.GetIsuListByCharacter() {
