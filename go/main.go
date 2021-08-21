@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -273,6 +274,18 @@ func main() {
 	}
 
 	cacheInit()
+
+	var socketFile *os.File
+	if socketFile, err = ioutil.TempFile("", "isucon_go.sock"); err != nil {
+		e.Logger.Fatalf("cannot create a socket file")
+	}
+	defer os.Remove(socketFile.Name())
+	listner, err := net.Listen("unix", socketFile.Name())
+	if err != nil {
+		e.Logger.Fatal("socket error")
+	}
+
+	e.Listener = listner
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
