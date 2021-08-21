@@ -276,7 +276,7 @@ func main() {
 	cacheInit()
 
 	var socketFile *os.File
-	if socketFile, err = ioutil.TempFile("", "isucon_go.sock"); err != nil {
+	if socketFile, err = os.CreateTemp("", "isucon_go.sock"); err != nil {
 		e.Logger.Fatalf("cannot create a socket file")
 	}
 	if err = os.Remove(socketFile.Name()); err != nil {
