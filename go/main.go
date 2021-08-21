@@ -194,7 +194,7 @@ func NewMySQLConnectionEnv() *MySQLConnectionEnv {
 
 func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=true&loc=Asia%%2FTokyo", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
-	return sqlx.Open("mysql", dsn)
+	return sqlx.Connect("mysql", dsn)
 }
 
 func init() {
@@ -252,12 +252,16 @@ func main() {
 	mySQLConnectionData = NewMySQLConnectionEnv()
 
 	var err error
-	db, err = mySQLConnectionData.ConnectDB()
-	if err != nil {
-		e.Logger.Fatalf("failed to connect db: %v", err)
-		return
+	for {
+		db, err = mySQLConnectionData.ConnectDB()
+		if err == nil && db.Ping() == nil {
+			break
+		}
+		fmt.Println(err)
+		time.Sleep(time.Second * 3)
 	}
-	db.SetMaxOpenConns(10)
+
+	db.SetMaxOpenConns(20)
 	defer db.Close()
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
