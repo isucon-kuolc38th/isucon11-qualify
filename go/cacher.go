@@ -11,6 +11,9 @@ type Cacher struct {
 	IsuListByCharacter map[string][]Isu
 	Isus               map[string]Isu
 	IsuImages          map[string][]byte
+	IsuListByUser      map[string][]Isu
+	UserMtx            sync.RWMutex
+	UserExists         map[string]bool
 }
 
 func init() {
@@ -25,6 +28,9 @@ func CacheClear() {
 		IsuListByCharacter: map[string][]Isu{},
 		Isus:               map[string]Isu{},
 		IsuImages:          map[string][]byte{},
+		IsuListByUser:      map[string][]Isu{},
+		UserMtx:            sync.RWMutex{},
+		UserExists:         map[string]bool{},
 	}
 }
 
@@ -64,6 +70,13 @@ func (ch *Cacher) GetIsuListByCharacter() map[string][]Isu {
 	return ch.IsuListByCharacter
 }
 
+func (ch *Cacher) GetIsuListByUser(jisUserID string) []Isu {
+	ch.IsuMtx.RLock()
+	defer ch.IsuMtx.RUnlock()
+
+	return ch.IsuListByUser[jisUserID]
+}
+
 func (ch *Cacher) AddIsu(isu Isu) {
 	ch.IsuMtx.Lock()
 	defer ch.IsuMtx.Unlock()
@@ -73,6 +86,7 @@ func (ch *Cacher) AddIsu(isu Isu) {
 
 	ch.Isus[isu.JIAIsuUUID] = isu
 	ch.IsuListByCharacter[isu.Character] = append(ch.IsuListByCharacter[isu.Character], isu)
+	ch.IsuListByUser[isu.JIAUserID] = append(ch.IsuListByUser[isu.JIAUserID], isu)
 }
 
 func (ch *Cacher) GetIsuImage(jiaIsuUUID string) ([]byte, bool) {
@@ -81,4 +95,18 @@ func (ch *Cacher) GetIsuImage(jiaIsuUUID string) ([]byte, bool) {
 
 	im, ok := ch.IsuImages[jiaIsuUUID]
 	return im, ok
+}
+
+func (ch *Cacher) AddUser(jiaUserID string) {
+	ch.IsuMtx.Lock()
+	defer ch.IsuMtx.Unlock()
+
+	ch.UserExists[jiaUserID] = true
+}
+
+func (ch *Cacher) IsUserExists(jiaUserID string) bool {
+	ch.IsuMtx.RLock()
+	defer ch.IsuMtx.RUnlock()
+
+	return ch.UserExists[jiaUserID]
 }
