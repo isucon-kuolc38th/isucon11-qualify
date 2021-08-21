@@ -279,7 +279,9 @@ func main() {
 	if socketFile, err = ioutil.TempFile("", "isucon_go.sock"); err != nil {
 		e.Logger.Fatalf("cannot create a socket file")
 	}
-	defer os.Remove(socketFile.Name())
+	if err = os.Remove(socketFile.Name()); err != nil {
+		e.Logger.Fatalf("cannnot remove")
+	}
 	listner, err := net.Listen("unix", socketFile.Name())
 	if err != nil {
 		e.Logger.Fatalf("socket error: %v", err)
