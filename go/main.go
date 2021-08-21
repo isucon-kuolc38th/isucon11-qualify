@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"net/http/pprof"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -238,6 +240,11 @@ func main() {
 	e.Static("/assets", frontendContentsPath+"/assets")
 
 	e.GET("/stats", echo.WrapHandler(http.HandlerFunc(measure.HandleStats)))
+	e.Group("/debug/pprof").Any("/cmdline", echo.WrapHandler(http.HandlerFunc(pprof.Cmdline)))
+	e.Group("/debug/pprof").Any("/profile", echo.WrapHandler(http.HandlerFunc(pprof.Profile)))
+	e.Group("/debug/pprof").Any("/symbol", echo.WrapHandler(http.HandlerFunc(pprof.Symbol)))
+	e.Group("/debug/pprof").Any("/trace", echo.WrapHandler(http.HandlerFunc(pprof.Trace)))
+	e.Group("/debug/pprof").Any("/*", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
 
 	mySQLConnectionData = NewMySQLConnectionEnv()
 
