@@ -277,7 +277,7 @@ func main() {
 }
 
 func getSession(r *http.Request) (*sessions.Session, error) {
-	measure.Start("getSession").Stop()
+	defer measure.Start("getSession").Stop()
 	session, err := sessionStore.Get(r, sessionName)
 	if err != nil {
 		return nil, err
@@ -286,7 +286,7 @@ func getSession(r *http.Request) (*sessions.Session, error) {
 }
 
 func getUserIDFromSession(c echo.Context) (string, int, error) {
-	measure.Start("getUserIDFromSession").Stop()
+	defer measure.Start("getUserIDFromSession").Stop()
 	session, err := getSession(c.Request())
 	if err != nil {
 		return "", http.StatusInternalServerError, fmt.Errorf("failed to get session: %v", err)
@@ -313,7 +313,7 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 }
 
 func getJIAServiceURL(tx *sqlx.Tx) string {
-	measure.Start("getJIAServiceURL").Stop()
+	defer measure.Start("getJIAServiceURL").Stop()
 	var config Config
 	err := tx.Get(&config, "SELECT * FROM `isu_association_config` WHERE `name` = ?", "jia_service_url")
 	if err != nil {
@@ -362,7 +362,7 @@ func postInitialize(c echo.Context) error {
 // POST /api/auth
 // サインアップ・サインイン
 func postAuthentication(c echo.Context) error {
-	measure.Start("postAuthentication").Stop()
+	defer measure.Start("postAuthentication").Stop()
 	reqJwt := strings.TrimPrefix(c.Request().Header.Get("Authorization"), "Bearer ")
 
 	token, err := jwt.Parse(reqJwt, func(token *jwt.Token) (interface{}, error) {
@@ -420,7 +420,7 @@ func postAuthentication(c echo.Context) error {
 // POST /api/signout
 // サインアウト
 func postSignout(c echo.Context) error {
-	measure.Start("postSignout").Stop()
+	defer measure.Start("postSignout").Stop()
 	_, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -450,7 +450,7 @@ func postSignout(c echo.Context) error {
 // GET /api/user/me
 // サインインしている自分自身の情報を取得
 func getMe(c echo.Context) error {
-	measure.Start("getMe").Stop()
+	defer measure.Start("getMe").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -468,7 +468,7 @@ func getMe(c echo.Context) error {
 // GET /api/isu
 // ISUの一覧を取得
 func getIsuList(c echo.Context) error {
-	measure.Start("getIsuList").Stop()
+	defer measure.Start("getIsuList").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -551,7 +551,7 @@ func getIsuList(c echo.Context) error {
 // POST /api/isu
 // ISUを登録
 func postIsu(c echo.Context) error {
-	measure.Start("postIsu").Stop()
+	defer measure.Start("postIsu").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -686,7 +686,7 @@ func postIsu(c echo.Context) error {
 // GET /api/isu/:jia_isu_uuid
 // ISUの情報を取得
 func getIsuID(c echo.Context) error {
-	measure.Start("getIsuID").Stop()
+	defer measure.Start("getIsuID").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -717,7 +717,7 @@ func getIsuID(c echo.Context) error {
 // GET /api/isu/:jia_isu_uuid/icon
 // ISUのアイコンを取得
 func getIsuIcon(c echo.Context) error {
-	measure.Start("getIsuIcon").Stop()
+	defer measure.Start("getIsuIcon").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -748,7 +748,7 @@ func getIsuIcon(c echo.Context) error {
 // GET /api/isu/:jia_isu_uuid/graph
 // ISUのコンディショングラフ描画のための情報を取得
 func getIsuGraph(c echo.Context) error {
-	measure.Start("getIsuGraph").Stop()
+	defer measure.Start("getIsuGraph").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -805,7 +805,7 @@ func getIsuGraph(c echo.Context) error {
 
 // グラフのデータ点を一日分生成
 func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Time) ([]GraphResponse, error) {
-	measure.Start("generateIsuGraphResponse").Stop()
+	defer measure.Start("generateIsuGraphResponse").Stop()
 	dataPoints := []GraphDataPointWithInfo{}
 	conditionsInThisHour := []IsuCondition{}
 	timestampsInThisHour := []int64{}
@@ -912,7 +912,7 @@ func generateIsuGraphResponse(tx *sqlx.Tx, jiaIsuUUID string, graphDate time.Tim
 
 // 複数のISUのコンディションからグラフの一つのデータ点を計算
 func calculateGraphDataPoint(isuConditions []IsuCondition) (GraphDataPoint, error) {
-	measure.Start("calculateGraphDataPoint").Stop()
+	defer measure.Start("calculateGraphDataPoint").Stop()
 	conditionsCount := map[string]int{"is_broken": 0, "is_dirty": 0, "is_overweight": 0}
 	rawScore := 0
 	for _, condition := range isuConditions {
@@ -972,7 +972,7 @@ func calculateGraphDataPoint(isuConditions []IsuCondition) (GraphDataPoint, erro
 // GET /api/condition/:jia_isu_uuid
 // ISUのコンディションを取得
 func getIsuConditions(c echo.Context) error {
-	measure.Start("getIsuConditions").Stop()
+	defer measure.Start("getIsuConditions").Stop()
 	jiaUserID, errStatusCode, err := getUserIDFromSession(c)
 	if err != nil {
 		if errStatusCode == http.StatusUnauthorized {
@@ -1037,7 +1037,7 @@ func getIsuConditions(c echo.Context) error {
 // ISUのコンディションをDBから取得
 func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, conditionLevel map[string]interface{}, startTime time.Time,
 	limit int, isuName string) ([]*GetIsuConditionResponse, error) {
-	measure.Start("getIsuConditionsFromDB").Stop()
+	defer measure.Start("getIsuConditionsFromDB").Stop()
 
 	conditions := []IsuCondition{}
 	var err error
@@ -1092,7 +1092,7 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, c
 
 // ISUのコンディションの文字列からコンディションレベルを計算
 func calculateConditionLevel(condition string) (string, error) {
-	measure.Start("calculateConditionLevel").Stop()
+	defer measure.Start("calculateConditionLevel").Stop()
 	var conditionLevel string
 
 	warnCount := strings.Count(condition, "=true")
@@ -1113,7 +1113,7 @@ func calculateConditionLevel(condition string) (string, error) {
 // GET /api/trend
 // ISUの性格毎の最新のコンディション情報
 func getTrend(c echo.Context) error {
-	measure.Start("getTrend").Stop()
+	defer measure.Start("getTrend").Stop()
 	characterList := []Isu{}
 	err := db.Select(&characterList, "SELECT `character` FROM `isu` GROUP BY `character`")
 	if err != nil {
@@ -1195,7 +1195,7 @@ func getTrend(c echo.Context) error {
 // POST /api/condition/:jia_isu_uuid
 // ISUからのコンディションを受け取る
 func postIsuCondition(c echo.Context) error {
-	measure.Start("postIsuCondition").Stop()
+	defer measure.Start("postIsuCondition").Stop()
 	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
 	dropProbability := 0.9
 	if rand.Float64() <= dropProbability {
@@ -1263,7 +1263,7 @@ func postIsuCondition(c echo.Context) error {
 
 // ISUのコンディションの文字列がcsv形式になっているか検証
 func isValidConditionFormat(conditionStr string) bool {
-	measure.Start("isValidConditionFormat").Stop()
+	defer measure.Start("isValidConditionFormat").Stop()
 
 	keys := []string{"is_dirty=", "is_overweight=", "is_broken="}
 	const valueTrue = "true"
@@ -1297,6 +1297,6 @@ func isValidConditionFormat(conditionStr string) bool {
 }
 
 func getIndex(c echo.Context) error {
-	measure.Start("getIndex").Stop()
+	defer measure.Start("getIndex").Stop()
 	return c.File(frontendContentsPath + "/index.html")
 }
