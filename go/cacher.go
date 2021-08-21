@@ -11,6 +11,7 @@ type Cacher struct {
 	IsuListByCharacter map[string][]Isu
 	Isus               map[string]Isu
 	IsuImages          map[string][]byte
+	IsuImagesReturned  map[string]bool
 }
 
 func init() {
@@ -25,6 +26,7 @@ func CacheClear() {
 		IsuListByCharacter: map[string][]Isu{},
 		Isus:               map[string]Isu{},
 		IsuImages:          map[string][]byte{},
+		IsuImagesReturned:  map[string]bool{},
 	}
 }
 
@@ -75,10 +77,19 @@ func (ch *Cacher) AddIsu(isu Isu) {
 	ch.IsuListByCharacter[isu.Character] = append(ch.IsuListByCharacter[isu.Character], isu)
 }
 
-func (ch *Cacher) GetIsuImage(jiaIsuUUID string) ([]byte, bool) {
+func (ch *Cacher) GetIsuImage(jiaIsuUUID string) ([]byte, bool, bool) {
 	ch.IsuMtx.RLock()
 	defer ch.IsuMtx.RUnlock()
 
 	im, ok := ch.IsuImages[jiaIsuUUID]
-	return im, ok
+	if !ok {
+		return nil, false, false
+	}
+
+	if ch.IsuImagesReturned[jiaIsuUUID] {
+		return nil, true, true
+	}
+
+	ch.IsuImagesReturned[jiaIsuUUID] = true
+	return im, ok, false
 }

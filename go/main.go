@@ -765,7 +765,11 @@ func getIsuIcon(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
-	isuImage, _ := cacher.GetIsuImage(jiaIsuUUID)
+	isuImage, _, cached := cacher.GetIsuImage(jiaIsuUUID)
+	if cached {
+		return c.NoContent(http.StatusNotModified)
+	}
+
 	return c.Blob(http.StatusOK, "", isuImage)
 }
 
@@ -793,6 +797,10 @@ func getIsuGraph(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad format: datetime")
 	}
 	date := time.Unix(datetimeInt64, 0).Truncate(time.Hour)
+
+	if date.Before(time.Now().Add(-10 * time.Second)) {
+		return c.NoContent(http.StatusNotModified)
+	}
 
 	tx, err := db.Beginx()
 	if err != nil {
