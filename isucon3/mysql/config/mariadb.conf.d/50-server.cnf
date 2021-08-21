@@ -15,15 +15,11 @@ bind-address = 0.0.0.0 # 外部から接続可能にする
 
 query_cache_size        = 16M
 
-## log ##
-log_output=FILE
-general_log=1
-general_log_file=/var/log/mysql/query.log
-slow_query_log=1
-slow_query_log_file=/var/log/mysql/slow_query.log
-log_error=/var/log/mysql/error.log
-long_query_time=0.1
-log_queries_not_using_indexes=1
+innodb_buffer_pool_size = 3G
+innodb_buffer_pool_instances = 3
+innodb_log_buffer_size = 16M
+innodb_log_file_size = 512M
+
 
 expire_logs_days        = 10
 character-set-server  = utf8mb4
@@ -58,4 +54,3 @@ collation-server      = utf8mb4_general_ci
 # If you use the same .cnf file for MariaDB of different versions,
 # use this group for options that older servers don't understand
 [mariadb-10.3]
-
