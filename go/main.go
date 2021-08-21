@@ -790,7 +790,7 @@ func getIsuIcon(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 	var image []byte
-	image, err := file.Read(image)
+	image, err = file.Read(image)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
