@@ -236,7 +236,7 @@ func main() {
 
 	e.POST("/api/condition/:jia_isu_uuid", postIsuCondition)
 
-	e.GET("/", getIndex)
+	e.GET("/", getIndexWithDelay)
 	e.GET("/isu/:jia_isu_uuid", getIndex)
 	e.GET("/isu/:jia_isu_uuid/condition", getIndex)
 	e.GET("/isu/:jia_isu_uuid/graph", getIndex)
@@ -1304,5 +1304,11 @@ func isValidConditionFormat(conditionStr string) bool {
 
 func getIndex(c echo.Context) error {
 	defer measure.Start("getIndex").Stop()
+	return c.File(frontendContentsPath + "/index.html")
+}
+
+func getIndexWithDelay(c echo.Context) error {
+	defer measure.Start("getIndexWithDelay").Stop()
+	time.Sleep(10 * time.Millisecond)
 	return c.File(frontendContentsPath + "/index.html")
 }
