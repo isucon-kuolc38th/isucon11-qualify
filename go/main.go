@@ -390,6 +390,31 @@ func postInitialize(c echo.Context) error {
 		c.Logger().Errorf("db error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+	
+	// dbから画像を引きはがす
+	rows, err := db.Exec("SELECT image, jia_user_id, jia_isu_uuid FROM isu")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var image []byte
+		var jiaUserId string
+		var jiaIsuUUID string
+		if err := rows.Scan(&image, &jiaUserId, &jiaIsuUUID); err != nil {
+			panic(err)
+		}
+		name := fmt.Sprintf("%s-%s", jiaUserId, jiaIsuUUID)
+
+		file, err := os.Create(fmt.Sprintf("/home/isucon/webapp/public/icons/%s", name))
+		defer file.Close()
+		if err != nil {
+			panic(err)
+		}
+		if _, err := file.Write(image); err != nil {
+			panic(err)
+		}
+	}
 
 	cacheInit()
 
@@ -757,16 +782,16 @@ func getIsuIcon(c echo.Context) error {
 	}
 
 	jiaIsuUUID := c.Param("jia_isu_uuid")
-
-	var image []byte
-	err = db.Get(&image, "SELECT `image` FROM `isu` WHERE `jia_user_id` = ? AND `jia_isu_uuid` = ?",
-		jiaUserID, jiaIsuUUID)
+	
+	name := fmt.Sprintf("%s-%s", jiaUserID, jiaIsuUUID)
+	file, err := os.Open(fmt.Sprintf("/home/isucon/webapp/public/icons/%s", name))
+	defer file.Close()
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return c.String(http.StatusNotFound, "not found: isu")
-		}
-
-		c.Logger().Errorf("db error: %v", err)
+		return c.String(http.StatusNotFound, "not found: isu")
+	}
+	var image []byte
+	image, err := file.Read(image)
+	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
