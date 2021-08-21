@@ -13,9 +13,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"net/http/pprof"
@@ -275,22 +277,25 @@ func main() {
 
 	cacheInit()
 
-	var socketFile *os.File
-	if socketFile, err = os.CreateTemp("", "isucon_go.sock"); err != nil {
-		e.Logger.Fatalf("cannot create a socket file")
-	}
-	if err = os.Remove(socketFile.Name()); err != nil {
-		e.Logger.Fatalf("cannnot remove")
-	}
-	listner, err := net.Listen("unix", socketFile.Name())
+	listner, err := net.Listen("unix", "/tmp/webapp.sock")
 	if err != nil {
 		e.Logger.Fatalf("socket error: %v", err)
 	}
+	onShutdown(listner)
 
 	e.Listener = listner
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
+}
+
+func onShutdown(listener net.Listener) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		listener.Close()
+	}()
 }
 
 func getSession(r *http.Request) (*sessions.Session, error) {
