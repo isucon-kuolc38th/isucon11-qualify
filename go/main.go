@@ -765,7 +765,8 @@ func getIsuIcon(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
-	return c.Blob(http.StatusOK, "", isu.Image)
+	isuImage, _ := cacher.GetIsuImage(jiaIsuUUID)
+	return c.Blob(http.StatusOK, "", isuImage)
 }
 
 // GET /api/isu/:jia_isu_uuid/graph

@@ -10,6 +10,7 @@ type Cacher struct {
 	IsuMtx             sync.RWMutex
 	IsuListByCharacter map[string][]Isu
 	Isus               map[string]Isu
+	IsuImages          map[string][]byte
 }
 
 func init() {
@@ -23,6 +24,7 @@ func CacheClear() {
 		IsuMtx:             sync.RWMutex{},
 		IsuListByCharacter: map[string][]Isu{},
 		Isus:               map[string]Isu{},
+		IsuImages:          map[string][]byte{},
 	}
 }
 
@@ -66,6 +68,17 @@ func (ch *Cacher) AddIsu(isu Isu) {
 	ch.IsuMtx.Lock()
 	defer ch.IsuMtx.Unlock()
 
+	ch.IsuImages[isu.JIAIsuUUID] = isu.Image
+	isu.Image = nil
+
 	ch.Isus[isu.JIAIsuUUID] = isu
 	ch.IsuListByCharacter[isu.Character] = append(ch.IsuListByCharacter[isu.Character], isu)
+}
+
+func (ch *Cacher) GetIsuImage(jiaIsuUUID string) ([]byte, bool) {
+	ch.IsuMtx.RLock()
+	defer ch.IsuMtx.RUnlock()
+
+	im, ok := ch.IsuImages[jiaIsuUUID]
+	return im, ok
 }
