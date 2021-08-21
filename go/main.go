@@ -282,7 +282,7 @@ func main() {
 	defer os.Remove(socketFile.Name())
 	listner, err := net.Listen("unix", socketFile.Name())
 	if err != nil {
-		e.Logger.Fatal("socket error")
+		e.Logger.Fatalf("socket error: %v", err)
 	}
 
 	e.Listener = listner
