@@ -1232,6 +1232,7 @@ func postIsuCondition(c echo.Context) error {
 
 	var lastCondition IsuCondition
 	var lastTimestamp time.Time
+	var conditions []IsuCondition
 	for _, cond := range req {
 		timestamp := time.Unix(cond.Timestamp, 0)
 
@@ -1241,35 +1242,32 @@ func postIsuCondition(c echo.Context) error {
 
 		createdAt := time.Now()
 
-		res, err := tx.Exec(
-			"INSERT INTO `isu_condition`"+
-				"	(`id`, `jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `created_at`)"+
-				"	VALUES (?, ?, ?, ?, ?, ?, ?)",
-			createdAt.UnixNano(), jiaIsuUUID, timestamp, cond.IsSitting, cond.Condition, cond.Message, createdAt)
-		if err != nil {
-			c.Logger().Errorf("db error: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
+		cond := IsuCondition{
+			ID:         int(createdAt.UnixNano()),
+			JIAIsuUUID: jiaIsuUUID,
+			Timestamp:  timestamp,
+			IsSitting:  cond.IsSitting,
+			Condition:  cond.Condition,
+			Message:    cond.Message,
+			CreatedAt:  createdAt,
 		}
 
-		id, err := res.LastInsertId()
-		if err != nil {
-			c.Logger().Errorf("db error: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+		conditions = append(conditions, cond)
 
 		if lastTimestamp.IsZero() || timestamp.After(lastTimestamp) {
-			lastCondition = IsuCondition{
-				ID:         int(id),
-				JIAIsuUUID: jiaIsuUUID,
-				Timestamp:  timestamp,
-				IsSitting:  cond.IsSitting,
-				Condition:  cond.Condition,
-				Message:    cond.Message,
-				CreatedAt:  createdAt,
-			}
-
+			lastCondition = cond
 			lastTimestamp = timestamp
 		}
+	}
+
+	_, err = tx.NamedExec(
+		"INSERT INTO `isu_condition` (`id`, `jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `created_at`) VALUES (:id, :jia_isu_uuid, :timestamp, :is_sitting, :condition, :message, :created_at)",
+		conditions,
+	)
+
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	err = tx.Commit()
