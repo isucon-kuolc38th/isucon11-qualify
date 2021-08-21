@@ -9,5 +9,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/labstack/echo/v4 v4.3.0
 	github.com/labstack/gommon v0.3.0
+	github.com/najeira/measure v0.0.0-20181003032124-22a5dc927668 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
 )
