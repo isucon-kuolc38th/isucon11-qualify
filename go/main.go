@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"net/http/pprof"
+	"runtime"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
@@ -197,6 +198,8 @@ func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 }
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	sessionStore = sessions.NewCookieStore([]byte(getEnv("SESSION_KEY", "isucondition")))
 
 	key, err := ioutil.ReadFile(jiaJWTSigningKeyPath)
