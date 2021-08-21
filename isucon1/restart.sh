@@ -22,3 +22,5 @@ go build -o isucondition  # ! 要編集
 sleep 1
 sudo systemctl start isucondition.go.service # ! 要編集
 echo "go service started!"
+
+chmod 777 /tmp/webapp.sock
