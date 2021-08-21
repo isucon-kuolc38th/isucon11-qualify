@@ -530,15 +530,7 @@ func getIsuList(c echo.Context) error {
 	}
 	defer tx.Rollback()
 
-	isuList := []Isu{}
-	err = tx.Select(
-		&isuList,
-		"SELECT * FROM `isu` WHERE `jia_user_id` = ? ORDER BY `id` DESC",
-		jiaUserID)
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+	isuList := cacher.GetIsuListByUser(jiaUserID)
 
 	err = tx.Commit()
 	if err != nil {
@@ -547,7 +539,8 @@ func getIsuList(c echo.Context) error {
 	}
 
 	responseList := []GetIsuListResponse{}
-	for _, isu := range isuList {
+	for i := len(isuList) - 1; i >= 0; i-- {
+		isu := isuList[i]
 		lastCondition, foundLastCondition := cacher.GetLastCondition(isu.JIAIsuUUID)
 
 		var formattedCondition *GetIsuConditionResponse
