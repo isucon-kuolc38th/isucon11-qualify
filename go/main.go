@@ -392,7 +392,7 @@ func postInitialize(c echo.Context) error {
 	}
 	
 	// dbから画像を引きはがす
-	rows, err := db.Exec("SELECT image, jia_user_id, jia_isu_uuid FROM isu")
+	rows, err := db.Queryx("SELECT image, jia_user_id, jia_isu_uuid FROM isu")
 	if err != nil {
 		panic(err)
 	}
