@@ -798,9 +798,9 @@ func getIsuGraph(c echo.Context) error {
 	}
 	date := time.Unix(datetimeInt64, 0).Truncate(time.Hour)
 
-	if date.Before(time.Now().Add(-10 * time.Second)) {
-		return c.NoContent(http.StatusNotModified)
-	}
+	// if date.Before(time.Now().Add(-10 * time.Second)) {
+	// 	return c.NoContent(http.StatusNotModified)
+	// }
 
 	tx, err := db.Beginx()
 	if err != nil {
