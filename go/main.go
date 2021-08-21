@@ -1093,7 +1093,7 @@ func calculateConditionLevel(condition string) (string, error) {
 
 func getTrend(c echo.Context) error {
 
-	time.Sleep(800 * time.Millisecond)
+	time.Sleep(700 * time.Millisecond)
 
 	res := []TrendResponse{}
 	for character, isuList := range cacher.GetIsuListByCharacter() {
@@ -1148,7 +1148,7 @@ func getTrend(c echo.Context) error {
 // ISUからのコンディションを受け取る
 func postIsuCondition(c echo.Context) error {
 	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-	dropProbability := 0.7
+	dropProbability := 0.8
 	if rand.Float64() <= dropProbability {
 		c.Logger().Warnf("drop post isu condition request")
 		return c.NoContent(http.StatusAccepted)
