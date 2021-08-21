@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -54,6 +53,8 @@ var (
 	jiaJWTSigningKey *ecdsa.PublicKey
 
 	postIsuConditionTargetBaseURL string // JIAへのactivate時に登録する，ISUがconditionを送る先のURL
+
+	JIAServiceURL string
 )
 
 type Config struct {
@@ -272,7 +273,13 @@ func main() {
 		return
 	}
 
-	cacheInit()
+	jiaServiceURL := defaultJIAServiceURL
+	var config Config
+	if err := db.Get(&config, "SELECT * FROM `isu_association_config` WHERE `name` = ?", "jia_service_url"); err == nil {
+		jiaServiceURL = config.URL
+	}
+
+	cacheInit(jiaServiceURL)
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
@@ -314,21 +321,19 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 	return jiaUserID, 0, nil
 }
 
-func getJIAServiceURL(tx *sqlx.Tx) string {
-	defer measure.Start("getJIAServiceURL").Stop()
-	var config Config
-	err := tx.Get(&config, "SELECT * FROM `isu_association_config` WHERE `name` = ?", "jia_service_url")
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			log.Print(err)
-		}
-		return defaultJIAServiceURL
-	}
-	return config.URL
-}
-
-func cacheInit() error {
+func cacheInit(jiaServiceURL string) error {
 	CacheClear()
+
+	_, err := db.Exec(
+		"INSERT INTO `isu_association_config` (`name`, `url`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `url` = VALUES(`url`)",
+		"jia_service_url",
+		jiaServiceURL,
+	)
+	if err != nil {
+		return err
+	}
+
+	JIAServiceURL = jiaServiceURL
 
 	conditions := []IsuCondition{}
 	if err := db.Select(&conditions, "SELECT * FROM `isu_condition` ORDER BY `timestamp` ASC"); err != nil {
@@ -370,17 +375,7 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	_, err = db.Exec(
-		"INSERT INTO `isu_association_config` (`name`, `url`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `url` = VALUES(`url`)",
-		"jia_service_url",
-		request.JIAServiceURL,
-	)
-	if err != nil {
-		c.Logger().Errorf("db error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	cacheInit()
+	cacheInit(request.JIAServiceURL)
 
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
@@ -614,36 +609,7 @@ func postIsu(c echo.Context) error {
 		}
 	}
 
-	tx, err := db.Beginx()
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
-	createdAt := time.Now()
-
-	result, err := tx.Exec("INSERT INTO `isu`"+
-		"	(`jia_isu_uuid`, `name`, `image`, `jia_user_id`, `created_at`) VALUES (?, ?, ?, ?, ?)",
-		jiaIsuUUID, isuName, image, jiaUserID, createdAt)
-	if err != nil {
-		mysqlErr, ok := err.(*mysql.MySQLError)
-
-		if ok && mysqlErr.Number == uint16(mysqlErrNumDuplicateEntry) {
-			return c.String(http.StatusConflict, "duplicated: isu")
-		}
-
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	targetURL := getJIAServiceURL(tx) + "/api/activate"
+	targetURL := JIAServiceURL + "/api/activate"
 	body := JIAServiceRequest{postIsuConditionTargetBaseURL, jiaIsuUUID}
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
@@ -683,7 +649,30 @@ func postIsu(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	_, err = tx.Exec("UPDATE `isu` SET `character` = ? WHERE  `jia_isu_uuid` = ?", isuFromJIA.Character, jiaIsuUUID)
+	tx, err := db.Beginx()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+
+	createdAt := time.Now()
+
+	result, err := tx.Exec("INSERT INTO `isu`"+
+		"	(`jia_isu_uuid`, `name`, `image`, `character`, `jia_user_id`, `created_at`) VALUES (?, ?, ?, ?, ?, ?)",
+		jiaIsuUUID, isuName, image, isuFromJIA.Character, jiaUserID, createdAt)
+	if err != nil {
+		mysqlErr, ok := err.(*mysql.MySQLError)
+
+		if ok && mysqlErr.Number == uint16(mysqlErrNumDuplicateEntry) {
+			return c.String(http.StatusConflict, "duplicated: isu")
+		}
+
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	id, err := result.LastInsertId()
 	if err != nil {
 		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
