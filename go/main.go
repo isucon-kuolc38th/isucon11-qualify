@@ -326,15 +326,7 @@ func getUserIDFromSession(c echo.Context) (string, int, error) {
 	}
 
 	jiaUserID := _jiaUserID.(string)
-	var count int
-
-	err = db.Get(&count, "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = ?",
-		jiaUserID)
-	if err != nil {
-		return "", http.StatusInternalServerError, fmt.Errorf("db error: %v", err)
-	}
-
-	if count == 0 {
+	if !cacher.IsUserExists(jiaUserID) {
 		return "", http.StatusUnauthorized, fmt.Errorf("not found: user")
 	}
 
@@ -371,6 +363,15 @@ func cacheInit(jiaServiceURL string) error {
 
 	for _, isu := range isus {
 		cacher.AddIsu(isu)
+	}
+
+	jiaUserIDs := []string{}
+	if err := db.Select(&jiaUserIDs, "SELECT jia_user_id FROM `user`"); err != nil {
+		return err
+	}
+
+	for _, jiaUserID := range jiaUserIDs {
+		cacher.AddUser(jiaUserID)
 	}
 
 	return nil
