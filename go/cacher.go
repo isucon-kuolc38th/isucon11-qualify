@@ -78,8 +78,8 @@ func (ch *Cacher) AddIsu(isu Isu) {
 }
 
 func (ch *Cacher) GetIsuImage(jiaIsuUUID string) ([]byte, bool, bool) {
-	ch.IsuMtx.RLock()
-	defer ch.IsuMtx.RUnlock()
+	ch.IsuMtx.Lock()
+	defer ch.IsuMtx.Unlock()
 
 	im, ok := ch.IsuImages[jiaIsuUUID]
 	if !ok {
