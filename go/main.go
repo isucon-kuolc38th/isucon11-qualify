@@ -784,16 +784,10 @@ func getIsuIcon(c echo.Context) error {
 	jiaIsuUUID := c.Param("jia_isu_uuid")
 	
 	name := fmt.Sprintf("%s-%s", jiaUserID, jiaIsuUUID)
-	file, err := os.Open(fmt.Sprintf("/home/isucon/webapp/public/icons/%s", name))
-	defer file.Close()
-	if err != nil {
+    image, err := ioutil.ReadFile(fmt.Sprintf("/home/isucon/webapp/public/icons/%s", name))
+    if err != nil {
 		return c.String(http.StatusNotFound, "not found: isu")
-	}
-	var image []byte
-	image, err = file.Read(image)
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
+    }
 
 	return c.Blob(http.StatusOK, "", image)
 }
