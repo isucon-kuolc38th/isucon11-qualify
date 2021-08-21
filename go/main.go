@@ -427,6 +427,8 @@ func postAuthentication(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	cacher.AddUser(jiaUserID)
+
 	session, err := getSession(c.Request())
 	if err != nil {
 		c.Logger().Error(err)
